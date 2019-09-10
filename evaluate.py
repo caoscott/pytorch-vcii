@@ -3,7 +3,8 @@ import os
 import time
 
 import numpy as np
-from scipy.misc import imread, imresize, imsave
+from imageio import imread
+from scipy.misc import imresize, imsave
 
 import torch
 from torch.autograd import Variable
