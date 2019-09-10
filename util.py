@@ -1,6 +1,6 @@
 from collections import namedtuple
-from scipy.misc import imsave
 import cv2
+from imageio import imwrite
 import numpy as np
 import time
 
@@ -281,14 +281,14 @@ def forward_model(model, cooked_batch, ctx_frames, args, v_compress,
 
 
 def save_numpy_array_as_image(filename, arr):
-    imsave(
+    imwrite(
         filename, 
         np.squeeze(arr * 255.0).astype(np.uint8)
         .transpose(1, 2, 0))
 
 
 def save_torch_array_as_image(filename, arr):
-    imsave(
+    imwrite(
         filename, 
         np.squeeze(arr.numpy().clip(0, 1) * 255.0).astype(np.uint8)
         .transpose(1, 2, 0))
