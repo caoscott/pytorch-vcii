@@ -189,7 +189,7 @@ while True:
         if train_iter % 100 == 0:
             print('Loss at each step:')
             print(('{:.4f} ' * args.iterations +
-                   '\n').format(* [l.data[0] for l in losses]))
+                   '\n').format(* [l.data.item() for l in losses]))
 
         if train_iter % args.checkpoint_iters == 0:
             save(train_iter)
