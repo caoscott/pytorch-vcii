@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from modules import ConvLSTMCell, Sign
+from unet_parts import *
 
 
 class EncoderCell(nn.Module):
@@ -186,3 +187,27 @@ class DecoderCell(nn.Module):
         x = F.tanh(self.conv2(x)) / 2
         return x, hidden1, hidden2, hidden3, hidden4
 
+
+class FrameEncoderDecoder(nn.Module):
+    def __init__(self, n_channels: int, shrink: int):
+        super(FrameEncoderDecoder, self).__init__()
+        self.inc = inconv(n_channels, 64 // shrink)
+        self.down1 = down(64 // shrink, 128 // shrink)
+        self.down2 = down(128 // shrink, 256 // shrink)
+        self.down3 = down(256 // shrink, 512 // shrink)
+        self.down4 = down(512 // shrink, 512 // shrink)
+        self.up1 = up(1024 // shrink, 256 // shrink)
+        self.up2 = up(512 // shrink, 128 // shrink)
+        self.up3 = up(256 // shrink, 64 // shrink)
+        self.up4 = up(128 // shrink, 64 // shrink)
+
+    def forward(self, x):
+        x = self.inc(x)
+        x = self.down1(x)
+        x = self.down2(x)
+        x = self.down3(x)
+        x = self.down4(x)
+        y = self.up1(x)
+        y = self.up2(y)
+        y = self.up3(y)
+        return [x, y]

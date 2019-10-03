@@ -72,6 +72,25 @@ class up(nn.Module):
         return x
 
 
+class upconv(nn.Module):
+    def __init__(self, in_ch, out_ch, bilinear=True):
+        super(upconv, self).__init__()
+
+        #  would be a nice idea if the upsampling could be learned too,
+        #  but my machine do not have enough memory to handle all those weights
+        if bilinear:
+            self.up = nn.UpsamplingBilinear2d(scale_factor=2)
+        else:
+            self.up = nn.ConvTranspose2d(in_ch, out_ch, 2, stride=2)
+
+        self.conv = double_conv(in_ch, out_ch)
+
+    def forward(self, x):
+        x = self.up(x)
+        x = self.conv(x)
+        return x
+
+
 class outconv(nn.Module):
     def __init__(self, in_ch, out_ch):
         super(outconv, self).__init__()
