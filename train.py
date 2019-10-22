@@ -186,7 +186,8 @@ while True:
                    scheduler.get_lr()[0],
                    loss.item(),
                    bp_t1 - bp_t0,
-                   batch_t1 - batch_t0))
+                   batch_t1 - batch_t0),
+            end="\r")
 
         if train_iter % 100 == 0:
             print('Loss at each step:')
