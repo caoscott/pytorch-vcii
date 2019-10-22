@@ -51,4 +51,5 @@ python -u train.py \
   --bits ${bits} \
   --distance1 ${distance1} --distance2 ${distance2} \
   --max-train-iters 10000 \
-  --save-out-img
+  --save-out-img \
+  --batch-size 8

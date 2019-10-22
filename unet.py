@@ -5,11 +5,11 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-# python 3 confusing imports :(
-from unet_parts import *
+from unet_parts import double_conv, down, inconv, outconv, up, upconv
+
 
 class UNet(nn.Module):
-    def __init__(self, n_channels, shrink):
+    def __init__(self, n_channels: int, shrink: int):
         super(UNet, self).__init__()
         self.inc = inconv(n_channels, 64 // shrink)
         self.down1 = down(64 // shrink, 128 // shrink)
@@ -19,7 +19,6 @@ class UNet(nn.Module):
         self.up1 = up(1024 // shrink, 256 // shrink)
         self.up2 = up(512 // shrink, 128 // shrink)
         self.up3 = up(256 // shrink, 64 // shrink)
-        self.up4 = up(128 // shrink, 64 // shrink)
 
     def forward(self, x):
         x1 = self.inc(x)
@@ -31,3 +30,29 @@ class UNet(nn.Module):
         out2 = self.up2(out1, x3)
         out3 = self.up3(out2, x2)
         return [out1, out2, out3]
+
+
+class ShrinkingUNet(nn.Module):
+    def __init__(self, channels_in: int, channels_out: int):
+        super(ShrinkingUNet, self).__init__()
+        self.inc = inconv(channels_in, 64)
+        self.down1 = down(64, 128)
+        self.down2 = down(128, 128)
+        self.down3 = down(128, 128)
+        self.down4 = down(128, 128)
+        self.up1 = upconv(128, 128)
+        self.up2 = upconv(128, 128)
+        self.up3 = upconv(128, 64)
+        self.up4 = upconv(64, channels_out)
+
+    def forward(self, x: nn.Module):
+        z = self.inc(x)
+        z = self.down1(z)
+        z = self.down2(z)
+        z = self.down3(z)
+        z = self.down4(z)
+        y = self.up1(z)
+        y = self.up2(y)
+        y = self.up3(y)
+        y = self.up4(y)
+        return z, y

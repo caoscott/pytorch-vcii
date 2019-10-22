@@ -188,26 +188,21 @@ class DecoderCell(nn.Module):
         return x, hidden1, hidden2, hidden3, hidden4
 
 
-class FrameEncoderDecoder(nn.Module):
-    def __init__(self, n_channels: int, shrink: int):
-        super(FrameEncoderDecoder, self).__init__()
-        self.inc = inconv(n_channels, 64 // shrink)
-        self.down1 = down(64 // shrink, 128 // shrink)
-        self.down2 = down(128 // shrink, 256 // shrink)
-        self.down3 = down(256 // shrink, 512 // shrink)
-        self.down4 = down(512 // shrink, 512 // shrink)
-        self.up1 = up(1024 // shrink, 256 // shrink)
-        self.up2 = up(512 // shrink, 128 // shrink)
-        self.up3 = up(256 // shrink, 64 // shrink)
-        self.up4 = up(128 // shrink, 64 // shrink)
+class FrameEncoder(nn.Module):
+    def __init__(self):
+        super(FrameEncoder, self).__init__()
+        self.relu = nn.ReLU()
+        self.down1 = nn.Conv2d(3, 128, kernel_size=3, stride=2, padding=1)
+        self.down2 = nn.Conv2d(128, 128, kernel_size=3, stride=2, padding=1)
+        self.down3 = nn.Conv2d(128, 128, kernel_size=3, stride=2, padding=1)
+        self.down4 = nn.Conv2d(128, 128, kernel_size=3, stride=2, padding=1)
+        self.bn1 = nn.BatchNorm2d(128)
+        self.bn2 = nn.BatchNorm2d(128)
+        self.bn3 = nn.BatchNorm2d(128)
 
     def forward(self, x):
-        x = self.inc(x)
-        x = self.down1(x)
-        x = self.down2(x)
-        x = self.down3(x)
+        x = self.bn1(self.relu(self.down1(x)))
+        x = self.bn2(self.relu(self.down2(x)))
+        x = self.bn3(self.relu(self.down3(x)))
         x = self.down4(x)
-        y = self.up1(x)
-        y = self.up2(y)
-        y = self.up3(y)
-        return [x, y]
+        return x

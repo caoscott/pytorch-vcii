@@ -1,12 +1,12 @@
+import glob
 import os
 import os.path
-import glob
+import random
 
+import cv2
+import numpy as np
 import torch
 import torch.utils.data as data
-import numpy as np
-import random
-import cv2
 
 
 def get_loader(is_train, root, mv_dir, args):
@@ -228,6 +228,7 @@ class ImageFolder(data.Dataset):
         assert len(filenames) == 3
 
         imgs_ = [self.loader(fn) for fn in filenames]
+        print(type(imgs_[0]))
 
         main_fn = filenames[1]
         return np.concatenate(imgs_, axis=2), main_fn

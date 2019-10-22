@@ -1,7 +1,7 @@
-import numpy as np
 import os
 import time
 
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -11,8 +11,9 @@ from torch.autograd import Variable
 from dataset import get_loader
 from evaluate import run_eval
 from train_options import parser
-from util_waveone import get_models, init_lstm, set_train, set_eval
-from util_waveone import prepare_inputs, forward_ctx
+from unet import ShrinkingUNet
+from util_waveone import (forward_ctx, get_models, init_lstm, prepare_inputs,
+                          set_eval, set_train)
 
 args = parser.parse_args()
 print(args)
@@ -35,23 +36,14 @@ def get_eval_loaders():
   return eval_loaders
 
 
-
 ############### Model ###############
-encoder, binarizer, decoder, unet = get_models(
-  args=args, v_compress=args.v_compress, 
-  bits=args.bits,
-  encoder_fuse_level=args.encoder_fuse_level,
-  decoder_fuse_level=args.decoder_fuse_level)
-
-nets = [encoder, binarizer, decoder]
-if unet is not None:
-  nets.append(unet)
+unet = ShrinkingUNet(3, 4).cuda()
+nets = [unet]
 
 gpus = [int(gpu) for gpu in args.gpus.split(',')]
 if len(gpus) > 1:
   print("Using GPUs {}.".format(gpus))
-  for net in nets:
-    net = nn.DataParallel(net, device_ids=gpus)
+  net = nn.DataParallel(net, device_ids=gpus)
 
 params = [{'params': net.parameters()} for net in nets]
 
@@ -68,7 +60,7 @@ if not os.path.exists(args.model_dir):
 
 ############### Checkpoints ###############
 def resume(index):
-  names = ['encoder', 'binarizer', 'decoder', 'unet']
+  names = ['unet']
 
   for net_idx, net in enumerate(nets):
     if net is not None:
@@ -82,7 +74,7 @@ def resume(index):
 
 
 def save(index):
-  names = ['encoder', 'binarizer', 'decoder', 'unet']
+  names = ['unet']
 
   for net_idx, net in enumerate(nets):
     if net is not None:
@@ -119,18 +111,8 @@ while True:
 
         solver.zero_grad()
 
-        # Init LSTM states.
-        (encoder_h_1, encoder_h_2, encoder_h_3,
-         decoder_h_1, decoder_h_2, decoder_h_3, decoder_h_4) = init_lstm(
-            batch_size=(crops[0].size(0) * args.num_crops), height=crops[0].size(2),
-            width=crops[0].size(3), args=args)
-
         # Forward U-net.
-        if args.v_compress:
-            unet_output1, unet_output2 = forward_ctx(unet, ctx_frames)
-        else:
-            unet_output1 = Variable(torch.zeros(args.batch_size,)).cuda()
-            unet_output2 = Variable(torch.zeros(args.batch_size,)).cuda()
+        unet_output1, unet_output2 = forward_ctx(unet, ctx_frames)
 
         res, frame1, frame2, warped_unet_output1, warped_unet_output2 = prepare_inputs(
             crops, args, unet_output1, unet_output2)
