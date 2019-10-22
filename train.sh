@@ -52,5 +52,5 @@ python -u train.py \
   --distance1 ${distance1} --distance2 ${distance2} \
   --max-train-iters 10000 \
   --save-out-img \
-  --batch-size 8 \
+  --batch-size 12 \
   --eval-iters 100
