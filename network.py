@@ -86,7 +86,6 @@ class Binarizer(nn.Module):
     def forward(self, input):
         feat = self.conv(input)
         x = F.tanh(feat)
-        print(x.shape)
         return self.sign(x)
 
 
