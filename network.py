@@ -19,8 +19,8 @@ class EncoderCell(nn.Module):
 
         # Layers.
         self.conv = nn.Conv2d(
-            9 if stack else 3, 
-            64, 
+            9 if stack else 3,
+            64,
             kernel_size=3, stride=2, padding=1, bias=False)
 
         self.rnn1 = ConvLSTMCell(
@@ -33,7 +33,7 @@ class EncoderCell(nn.Module):
             bias=False)
 
         self.rnn2 = ConvLSTMCell(
-            ((384 if fuse_encoder and v_compress else 256) 
+            ((384 if fuse_encoder and v_compress else 256)
              if self.fuse_level >= 2 else 256),
             512,
             kernel_size=3,
@@ -43,7 +43,7 @@ class EncoderCell(nn.Module):
             bias=False)
 
         self.rnn3 = ConvLSTMCell(
-            ((768 if fuse_encoder and v_compress else 512) 
+            ((768 if fuse_encoder and v_compress else 512)
              if self.fuse_level >= 3 else 512),
             512,
             kernel_size=3,
@@ -51,7 +51,6 @@ class EncoderCell(nn.Module):
             padding=1,
             hidden_kernel_size=1,
             bias=False)
-
 
     def forward(self, input, hidden1, hidden2, hidden3,
                 unet_output1, unet_output2):
@@ -114,8 +113,8 @@ class DecoderCell(nn.Module):
             bias=False)
 
         self.rnn2 = ConvLSTMCell(
-            (((128 + 256 // shrink * 2) if v_compress else 128) 
-             if self.fuse_level >= 3 else 128), #out1=256
+            (((128 + 256 // shrink * 2) if v_compress else 128)
+             if self.fuse_level >= 3 else 128),  # out1=256
             512,
             kernel_size=3,
             stride=1,
@@ -124,8 +123,8 @@ class DecoderCell(nn.Module):
             bias=False)
 
         self.rnn3 = ConvLSTMCell(
-            (((128 + 128//shrink*2) if v_compress else 128) 
-             if self.fuse_level >= 2 else 128), #out2=128
+            (((128 + 128//shrink*2) if v_compress else 128)
+             if self.fuse_level >= 2 else 128),  # out2=128
             256,
             kernel_size=3,
             stride=1,
@@ -134,7 +133,7 @@ class DecoderCell(nn.Module):
             bias=False)
 
         self.rnn4 = ConvLSTMCell(
-            (64 + 64//shrink*2) if v_compress else 64, #out3=64
+            (64 + 64//shrink*2) if v_compress else 64,  # out3=64
             128,
             kernel_size=3,
             stride=1,
@@ -144,7 +143,7 @@ class DecoderCell(nn.Module):
 
         self.conv2 = nn.Conv2d(
             32,
-            3, 
+            3,
             kernel_size=1, stride=1, padding=0, bias=False)
 
     def forward(self, input, hidden1, hidden2, hidden3, hidden4,
@@ -186,23 +185,3 @@ class DecoderCell(nn.Module):
 
         x = F.tanh(self.conv2(x)) / 2
         return x, hidden1, hidden2, hidden3, hidden4
-
-
-class FrameEncoder(nn.Module):
-    def __init__(self):
-        super(FrameEncoder, self).__init__()
-        self.relu = nn.ReLU()
-        self.down1 = nn.Conv2d(3, 128, kernel_size=3, stride=2, padding=1)
-        self.down2 = nn.Conv2d(128, 128, kernel_size=3, stride=2, padding=1)
-        self.down3 = nn.Conv2d(128, 128, kernel_size=3, stride=2, padding=1)
-        self.down4 = nn.Conv2d(128, 128, kernel_size=3, stride=2, padding=1)
-        self.bn1 = nn.BatchNorm2d(128)
-        self.bn2 = nn.BatchNorm2d(128)
-        self.bn3 = nn.BatchNorm2d(128)
-
-    def forward(self, x):
-        x = self.bn1(self.relu(self.down1(x)))
-        x = self.bn2(self.relu(self.down2(x)))
-        x = self.bn3(self.relu(self.down3(x)))
-        x = self.down4(x)
-        return x
