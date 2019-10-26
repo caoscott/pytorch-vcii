@@ -207,11 +207,13 @@ def forward_model(model, cooked_batch, ctx_frames, args, v_compress,
                   iterations, encoder_fuse_level, decoder_fuse_level):
     encoder, binarizer, decoder, unet = model
     res, _, _, flows = cooked_batch
+    frame1_np = ctx_frames[:, :3].numpy()
+    frame2_np = ctx_frames[:, 3:].numpy()
     ctx_frames = ctx_frames.cuda() - 0.5
     frame1 = ctx_frames[:, :3]
     frame2 = ctx_frames[:, 3:]
 
-    baseline_scores = evaluate_scores(frame1.numpy(), [frame2.numpy()])
+    baseline_scores = evaluate_scores(frame1_np, [frame2_np])
 
     init_rnn = init_lstm
 
