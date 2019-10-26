@@ -1,21 +1,21 @@
-from collections import namedtuple
-import cv2
-from imageio import imwrite
-import numpy as np
 import time
+from collections import namedtuple
 
+import cv2
+import numpy as np
 import torch
-from torch.autograd import Variable
-import torch.nn.functional as F
 import torch.nn as nn
+import torch.nn.functional as F
+from torch.autograd import Variable
 
 import network
+from imageio import imwrite
 from metric import msssim, psnr
 from unet import UNet
 
 
 def get_models(args, v_compress, bits, encoder_fuse_level, decoder_fuse_level):
-    
+
     encoder = network.EncoderCell(
         v_compress=v_compress,
         stack=args.stack,
@@ -40,8 +40,8 @@ def get_models(args, v_compress, bits, encoder_fuse_level, decoder_fuse_level):
 
 
 def get_identity_grid(size):
-    id_mat = Variable(torch.FloatTensor([[1, 0, 0, 0, 1, 0]] * size[0]), 
-        requires_grad=False).view(-1, 2, 3).cuda()
+    id_mat = Variable(torch.FloatTensor([[1, 0, 0, 0, 1, 0]] * size[0]),
+                      requires_grad=False).view(-1, 2, 3).cuda()
     return F.affine_grid(id_mat, size)
 
 
@@ -126,13 +126,12 @@ def set_train(models):
 
 def eval_forward(model, batch, args):
     batch, ctx_frames = batch
-    cooked_batch = prepare_batch(
+    res, frame1, frame2, flows = prepare_batch(
         batch, args.v_compress, args.warp)
-
 
     return forward_model(
         model=model,
-        cooked_batch=cooked_batch,
+        cooked_batch=(res, frame1, frame2, flows),
         ctx_frames=ctx_frames,
         args=args,
         v_compress=args.v_compress,
@@ -164,7 +163,8 @@ def prepare_inputs(crops, args, unet_output1, unet_output2):
     for crop_idx, data in enumerate(crops):
         patches = Variable(data.cuda())
 
-        res, frame1, frame2, flows = prepare_batch(patches, args.v_compress, args.warp)
+        res, frame1, frame2, flows = prepare_batch(
+            patches, args.v_compress, args.warp)
         data_arr.append(res)
         frame1_arr.append(frame1)
         frame2_arr.append(frame2)
@@ -176,12 +176,13 @@ def prepare_inputs(crops, args, unet_output1, unet_output2):
             warped_unet_output1.append(wuo1)
             warped_unet_output2.append(wuo2)
 
-
     res = torch.cat(data_arr, dim=0)
     frame1 = torch.cat(frame1_arr, dim=0)
     frame2 = torch.cat(frame2_arr, dim=0)
-    warped_unet_output1 = [torch.cat(wuos, dim=0) for wuos in zip(*warped_unet_output1)]
-    warped_unet_output2 = [torch.cat(wuos, dim=0) for wuos in zip(*warped_unet_output2)]
+    warped_unet_output1 = [torch.cat(wuos, dim=0)
+                           for wuos in zip(*warped_unet_output1)]
+    warped_unet_output2 = [torch.cat(wuos, dim=0)
+                           for wuos in zip(*warped_unet_output2)]
 
     return res, frame1, frame2, warped_unet_output1, warped_unet_output2
 
@@ -211,14 +212,16 @@ def forward_model(model, cooked_batch, ctx_frames, args, v_compress,
     frame1 = ctx_frames[:, :3]
     frame2 = ctx_frames[:, 3:]
 
+    baseline_scores = evaluate_scores(frame1, [frame2])
+
     init_rnn = init_lstm
 
     batch_size, _, height, width = res.size()
     (encoder_h_1, encoder_h_2, encoder_h_3,
      decoder_h_1, decoder_h_2, decoder_h_3, decoder_h_4) = init_rnn(batch_size,
-                                                                      height,
-                                                                      width,
-                                                                      args)
+                                                                    height,
+                                                                    width,
+                                                                    args)
 
     original = res.data.cpu().numpy() + 0.5
 
@@ -227,20 +230,26 @@ def forward_model(model, cooked_batch, ctx_frames, args, v_compress,
     losses = []
 
     # UNet.
-    enc_unet_output1 = Variable(torch.zeros(args.batch_size,), volatile=True).cuda()
-    enc_unet_output2 = Variable(torch.zeros(args.batch_size,), volatile=True).cuda()
+    enc_unet_output1 = Variable(torch.zeros(
+        args.batch_size,), volatile=True).cuda()
+    enc_unet_output2 = Variable(torch.zeros(
+        args.batch_size,), volatile=True).cuda()
 
-    dec_unet_output1 = Variable(torch.zeros(args.batch_size,), volatile=True).cuda()
-    dec_unet_output2 = Variable(torch.zeros(args.batch_size,), volatile=True).cuda()
+    dec_unet_output1 = Variable(torch.zeros(
+        args.batch_size,), volatile=True).cuda()
+    dec_unet_output2 = Variable(torch.zeros(
+        args.batch_size,), volatile=True).cuda()
     if v_compress:
         # Use decoded context frames to decode.
-        dec_unet_output1, dec_unet_output2 =  prepare_unet_output(
+        dec_unet_output1, dec_unet_output2 = prepare_unet_output(
             unet, torch.cat([frame1, frame2], dim=0), flows, warp=args.warp)
 
         enc_unet_output1, enc_unet_output2 = dec_unet_output1, dec_unet_output2
 
-        assert len(enc_unet_output1) == 3 and len(enc_unet_output2) == 3, (len(enc_unet_output1), len(enc_unet_output2))
-        assert len(dec_unet_output1) == 3 and len(dec_unet_output2) == 3, (len(dec_unet_output1), len(dec_unet_output2))
+        assert len(enc_unet_output1) == 3 and len(
+            enc_unet_output2) == 3, (len(enc_unet_output1), len(enc_unet_output2))
+        assert len(dec_unet_output1) == 3 and len(
+            dec_unet_output2) == 3, (len(dec_unet_output1), len(dec_unet_output2))
         for jj in range(3 - max(encoder_fuse_level, decoder_fuse_level)):
             enc_unet_output1[jj] = None
             enc_unet_output2[jj] = None
@@ -277,27 +286,28 @@ def forward_model(model, cooked_batch, ctx_frames, args, v_compress,
         out_imgs.append(out_img_np)
         losses.append(float(res.abs().mean().data.cpu().numpy()))
 
-    return original, np.array(out_imgs), np.array(losses), np.array(codes)
+    return original, np.array(out_imgs), np.array(losses), np.array(codes), baseline_scores
 
 
 def save_numpy_array_as_image(filename, arr):
     imwrite(
-        filename, 
+        filename,
         np.squeeze(arr * 255.0).astype(np.uint8)
         .transpose(1, 2, 0))
 
 
 def save_torch_array_as_image(filename, arr):
     imwrite(
-        filename, 
+        filename,
         np.squeeze(arr.numpy().clip(0, 1) * 255.0).astype(np.uint8)
         .transpose(1, 2, 0))
 
 
-def evaluate(original, out_imgs):
+def evaluate_scores(original, out_imgs):
 
-    ms_ssims = np.array([get_ms_ssim(original, out_img) for out_img in out_imgs])
-    psnrs    = np.array([   get_psnr(original, out_img) for out_img in out_imgs])
+    ms_ssims = np.array([get_ms_ssim(original, out_img)
+                         for out_img in out_imgs])
+    psnrs = np.array([get_psnr(original, out_img) for out_img in out_imgs])
 
     return ms_ssims, psnrs
 
@@ -306,7 +316,7 @@ def evaluate_all(original, out_imgs):
 
     all_msssim, all_psnr = [], []
     for j in range(original.shape[0]):
-        msssim, psnr = evaluate(
+        msssim, psnr = evaluate_scores(
             original[None, j],
             [out_img[None, j] for out_img in out_imgs])
         all_msssim.append(msssim)
@@ -358,33 +368,33 @@ def init_lstm(batch_size, height, width, args):
 
     encoder_h_1 = (Variable(
         torch.zeros(batch_size, 256, height // 4, width // 4)),
-                   Variable(
-                       torch.zeros(batch_size, 256, height // 4, width // 4)))
+        Variable(
+        torch.zeros(batch_size, 256, height // 4, width // 4)))
     encoder_h_2 = (Variable(
         torch.zeros(batch_size, 512, height // 8, width // 8)),
-                   Variable(
-                       torch.zeros(batch_size, 512, height // 8, width // 8)))
+        Variable(
+        torch.zeros(batch_size, 512, height // 8, width // 8)))
     encoder_h_3 = (Variable(
         torch.zeros(batch_size, 512, height // 16, width // 16)),
-                   Variable(
-                       torch.zeros(batch_size, 512, height // 16, width // 16)))
+        Variable(
+        torch.zeros(batch_size, 512, height // 16, width // 16)))
 
     decoder_h_1 = (Variable(
         torch.zeros(batch_size, 512, height // 16, width // 16)),
-                   Variable(
-                       torch.zeros(batch_size, 512, height // 16, width // 16)))
+        Variable(
+        torch.zeros(batch_size, 512, height // 16, width // 16)))
     decoder_h_2 = (Variable(
         torch.zeros(batch_size, 512, height // 8, width // 8)),
-                   Variable(
-                       torch.zeros(batch_size, 512, height // 8, width // 8)))
+        Variable(
+        torch.zeros(batch_size, 512, height // 8, width // 8)))
     decoder_h_3 = (Variable(
         torch.zeros(batch_size, 256, height // 4, width // 4)),
-                   Variable(
-                       torch.zeros(batch_size, 256, height // 4, width // 4)))
+        Variable(
+        torch.zeros(batch_size, 256, height // 4, width // 4)))
     decoder_h_4 = (Variable(
         torch.zeros(batch_size, 256 if False else 128, height // 2, width // 2)),
-                   Variable(
-                       torch.zeros(batch_size, 256 if False else 128, height // 2, width // 2)))
+        Variable(
+        torch.zeros(batch_size, 256 if False else 128, height // 2, width // 2)))
 
     encoder_h_1 = (encoder_h_1[0].cuda(), encoder_h_1[1].cuda())
     encoder_h_2 = (encoder_h_2[0].cuda(), encoder_h_2[1].cuda())
@@ -395,7 +405,5 @@ def init_lstm(batch_size, height, width, args):
     decoder_h_3 = (decoder_h_3[0].cuda(), decoder_h_3[1].cuda())
     decoder_h_4 = (decoder_h_4[0].cuda(), decoder_h_4[1].cuda())
 
-    return (encoder_h_1, encoder_h_2, encoder_h_3, 
+    return (encoder_h_1, encoder_h_2, encoder_h_3,
             decoder_h_1, decoder_h_2, decoder_h_3, decoder_h_4)
-
-

@@ -205,8 +205,8 @@ while True:
             eval_loaders = get_eval_loaders()
             for eval_name, eval_loader in eval_loaders.items():
                 eval_begin = time.time()
-                eval_loss, mssim, psnr = run_eval(nets, eval_loader, args,
-                                                  output_suffix='iter%d' % train_iter)
+                eval_loss, mssim, psnr, baseline_scores = run_eval(nets, eval_loader, args,
+                                                                   output_suffix='iter%d' % train_iter)
 
                 print('Evaluation @iter %d done in %d secs' % (
                     train_iter, time.time() - eval_begin))
@@ -216,6 +216,7 @@ while True:
                       + '\t'.join(['%.5f' % el for el in mssim.tolist()]))
                 print('%s PSNR   : ' % eval_name
                       + '\t'.join(['%.5f' % el for el in psnr.tolist()]))
+                print('%s Baseline: ' % eval_name + str(baseline_scores))
 
             set_train(nets)
             just_resumed = False
