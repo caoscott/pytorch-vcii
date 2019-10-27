@@ -79,8 +79,8 @@ def run_eval(model, eval_loader, args, output_suffix=''):
                 model, (batch, ctx_frames), args)
 
             baseline_scores2 = evaluate_scores(f1, [f2])
-            print(f1.mean().item(), f1.median().item(), f1.norm().item(),
-                  f2.mean().item(), f2.median().item(), f2.norm().item())
+            print(np.mean(f1), np.median(f1), np.linalg.norm(f1),
+                  np.mean(f2), np.median(f2), np.linalg.norm(f2))
 
             losses, msssim, psnr = finish_batch(
                 args, filenames, original, out_imgs,
