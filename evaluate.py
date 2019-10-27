@@ -72,13 +72,13 @@ def run_eval(model, eval_loader, args, output_suffix=''):
 
         start_time = time.time()
         for i, (batch, ctx_frames, filenames) in enumerate(eval_loader):
+            f1, f2 = batch[:, :3].numpy(), batch[:, 6:9].numpy()
             batch = batch.cuda()
 
             original, out_imgs, losses, code_batch, baseline_scores = eval_forward(
                 model, (batch, ctx_frames), args)
 
-            baseline_scores2 = evaluate_scores(batch[:, :3].numpy(),
-                                               [batch[:, 6:9].numpy()])
+            baseline_scores2 = evaluate_scores(f1, [f2])
 
             losses, msssim, psnr = finish_batch(
                 args, filenames, original, out_imgs,
