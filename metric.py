@@ -1,5 +1,5 @@
-## some function borrowed from
-## https://github.com/tensorflow/models/blob/master/compression/image_encoder/msssim.py
+# some function borrowed from
+# https://github.com/tensorflow/models/blob/master/compression/image_encoder/msssim.py
 """Python implementation of MS-SSIM.
 
 Usage:
@@ -9,10 +9,10 @@ python msssim.py --original_image=original.png --compared_image=distorted.png
 import argparse
 
 import numpy as np
-from scipy import signal
-from scipy.ndimage.filters import convolve
 from PIL import Image
 
+from scipy import signal
+from scipy.ndimage.filters import convolve
 
 
 def _FSpecialGauss(size, sigma):
@@ -198,7 +198,7 @@ def msssim(original, compared):
     original = original[None, ...] if original.ndim == 3 else original
     compared = compared[None, ...] if compared.ndim == 3 else compared
 
-    return MultiScaleSSIM(original, compared, max_val=255)
+    return MultiScaleSSIM(original, compared, max_val=1)
 
 
 def psnr(original, compared):
@@ -211,12 +211,12 @@ def psnr(original, compared):
 
     mse = np.mean(np.square(original - compared))
     try:
-      psnr = np.clip(
-          np.multiply(np.log10(255. * 255. / mse[mse > 0.]), 10.), 0., 99.99)[0]
+        psnr = np.clip(
+            np.multiply(np.log10(255. * 255. / mse[mse > 0.]), 10.), 0., 99.99)[0]
     except:
-      print('PSNR error')
-      print(mse)
-      return 99.99
+        print('PSNR error')
+        print(mse)
+        return 99.99
     return psnr
 
 
@@ -229,7 +229,8 @@ def main():
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--metric', '-m', type=str, default='all', help='metric')
+    parser.add_argument('--metric', '-m', type=str,
+                        default='all', help='metric')
     parser.add_argument(
         '--original-image', '-o', type=str, required=True, help='original image')
     parser.add_argument(
