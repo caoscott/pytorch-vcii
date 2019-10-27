@@ -159,6 +159,7 @@ def MultiScaleSSIM(img1,
         raise RuntimeError('Input images must have four dimensions, not %d',
                            img1.ndim)
 
+    print(img1.shape, img2.shape)
     # Note: default weights don't sum to 1.0 but do match the paper / matlab code.
     weights = np.array(weights if weights else
                        [0.0448, 0.2856, 0.3001, 0.2363, 0.1333])
