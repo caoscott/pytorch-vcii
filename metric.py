@@ -199,7 +199,7 @@ def msssim(original, compared):
     original = original[None, ...] if original.ndim == 3 else original
     compared = compared[None, ...] if compared.ndim == 3 else compared
 
-    return MultiScaleSSIM(original, compared, max_val=1)
+    return MultiScaleSSIM(original, compared)
 
 
 def psnr(original, compared):
