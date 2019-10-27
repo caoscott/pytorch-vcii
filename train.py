@@ -103,7 +103,7 @@ if args.load_model_name:
                                   args.load_iter))
 
     resume(args.load_model_name, args.load_iter)
-    train_iter = args.load_iter
+    train_iter = args.load_iter - 1  # JUST FOR DEBUGGING PURPOSE. TODO: Remove
     scheduler.last_epoch = train_iter - 1
     just_resumed = True
 
