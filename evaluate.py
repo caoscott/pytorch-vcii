@@ -61,39 +61,38 @@ def finish_batch(args, filenames, original, out_imgs,
 
 
 def run_eval(model, eval_loader, args, output_suffix=''):
+    with torch.no_grad():
+        for sub_dir in ['codes', 'images']:
+            cur_eval_dir = os.path.join(args.out_dir, output_suffix, sub_dir)
+            if not os.path.exists(cur_eval_dir):
+                print("Creating directory %s." % cur_eval_dir)
+                os.makedirs(cur_eval_dir)
 
-    for sub_dir in ['codes', 'images']:
-        cur_eval_dir = os.path.join(args.out_dir, output_suffix, sub_dir)
-        if not os.path.exists(cur_eval_dir):
-            print("Creating directory %s." % cur_eval_dir)
-            os.makedirs(cur_eval_dir)
+        all_losses, all_msssim, all_psnr = [], [], []
 
-    all_losses, all_msssim, all_psnr = [], [], []
+        start_time = time.time()
+        for i, (batch, ctx_frames, filenames) in enumerate(eval_loader):
+            batch = batch.cuda()
 
-    start_time = time.time()
-    for i, (batch, ctx_frames, filenames) in enumerate(eval_loader):
+            original, out_imgs, losses, code_batch, baseline_scores = eval_forward(
+                model, (batch, ctx_frames), args)
 
-        batch = Variable(batch.cuda(), volatile=True)
+            baseline_scores2 = evaluate_scores(batch[:, :3].numpy(),
+                                               [batch[:, 6:9].numpy()])
 
-        original, out_imgs, losses, code_batch, baseline_scores = eval_forward(
-            model, (batch, ctx_frames), args)
+            losses, msssim, psnr = finish_batch(
+                args, filenames, original, out_imgs,
+                losses, code_batch, output_suffix)
 
-        baseline_scores = evaluate_scores(ctx_frames[:, :3].numpy(), [
-                                          ctx_frames[:, 3:6].numpy()])
+            all_losses += losses
+            all_msssim += msssim
+            all_psnr += psnr
 
-        losses, msssim, psnr = finish_batch(
-            args, filenames, original, out_imgs,
-            losses, code_batch, output_suffix)
+            if i % 10 == 0:
+                print('\tevaluating iter %d (%f seconds)...' % (
+                    i, time.time() - start_time))
 
-        all_losses += losses
-        all_msssim += msssim
-        all_psnr += psnr
-
-        if i % 10 == 0:
-            print('\tevaluating iter %d (%f seconds)...' % (
-                i, time.time() - start_time))
-
-    return (np.array(all_losses).mean(axis=0),
-            np.array(all_msssim).mean(axis=0),
-            np.array(all_psnr).mean(axis=0),
-            baseline_scores)
+        return (np.array(all_losses).mean(axis=0),
+                np.array(all_msssim).mean(axis=0),
+                np.array(all_psnr).mean(axis=0),
+                baseline_scores + baseline_scores2)
