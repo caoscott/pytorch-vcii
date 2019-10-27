@@ -78,6 +78,9 @@ def run_eval(model, eval_loader, args, output_suffix=''):
         original, out_imgs, losses, code_batch, baseline_scores = eval_forward(
             model, (batch, ctx_frames), args)
 
+        baseline_scores = evaluate_scores(ctx_frames[:, :3].numpy(), [
+                                          ctx_frames[:, 6: 9].numpy()])
+
         losses, msssim, psnr = finish_batch(
             args, filenames, original, out_imgs,
             losses, code_batch, output_suffix)
