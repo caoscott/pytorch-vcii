@@ -69,6 +69,7 @@ def run_eval(model, eval_loader, args, output_suffix=''):
                 os.makedirs(cur_eval_dir)
 
         all_losses, all_msssim, all_psnr = [], [], []
+        total_baseline_scores = 0
 
         start_time = time.time()
         for i, (batch, ctx_frames, filenames) in enumerate(eval_loader):
@@ -78,7 +79,6 @@ def run_eval(model, eval_loader, args, output_suffix=''):
             original, out_imgs, losses, code_batch, baseline_scores = eval_forward(
                 model, (batch, ctx_frames), args)
 
-            baseline_scores2 = evaluate_scores(f1, [f2])
             print(np.mean(f1), np.median(f1), np.linalg.norm(f1),
                   np.mean(f2), np.median(f2), np.linalg.norm(f2))
 
@@ -94,7 +94,9 @@ def run_eval(model, eval_loader, args, output_suffix=''):
                 print('\tevaluating iter %d (%f seconds)...' % (
                     i, time.time() - start_time))
 
+            total_baseline_scores += baseline_scores
+
         return (np.array(all_losses).mean(axis=0),
                 np.array(all_msssim).mean(axis=0),
                 np.array(all_psnr).mean(axis=0),
-                baseline_scores + baseline_scores2)
+                total_baseline_scores / len(eval_loader))

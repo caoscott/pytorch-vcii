@@ -131,8 +131,8 @@ while True:
         if args.v_compress:
             unet_output1, unet_output2 = forward_ctx(unet, ctx_frames)
         else:
-            unet_output1 = Variable(torch.zeros(args.batch_size,)).cuda()
-            unet_output2 = Variable(torch.zeros(args.batch_size,)).cuda()
+            unet_output1 = torch.zeros(args.batch_size,).cuda()
+            unet_output2 = torch.zeros(args.batch_size,).cuda()
 
         res, frame1, frame2, warped_unet_output1, warped_unet_output2 = prepare_inputs(
             crops, args, unet_output1, unet_output2)
