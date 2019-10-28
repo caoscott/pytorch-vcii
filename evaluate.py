@@ -5,7 +5,6 @@ import time
 import numpy as np
 import torch
 import torch.utils.data as data
-from torch.autograd import Variable
 from torchvision import transforms
 
 from dataset import get_loader
@@ -69,7 +68,7 @@ def run_eval(model, eval_loader, args, output_suffix=''):
                 os.makedirs(cur_eval_dir)
 
         all_losses, all_msssim, all_psnr = [], [], []
-        total_baseline_scores = 0
+        total_baseline_scores = np.array([0., 0.])
 
         start_time = time.time()
         for i, (batch, ctx_frames, filenames) in enumerate(eval_loader):
