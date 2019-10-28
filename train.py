@@ -7,6 +7,7 @@ import torch.nn as nn
 import torch.optim as optim
 import torch.optim.lr_scheduler as LS
 from torch.autograd import Variable
+from torch.utils.tensorboard import SummaryWriter
 
 from dataset import get_loader
 from evaluate import run_eval
@@ -107,6 +108,8 @@ if args.load_model_name:
     scheduler.last_epoch = train_iter - 1
     just_resumed = True
 
+writer = SummaryWriter()
+
 
 while True:
 
@@ -180,14 +183,16 @@ while True:
 
         batch_t1 = time.time()
 
-        print(
-            '[TRAIN] Iter[{}]; LR: {}; Loss: {:.6f}; Backprop: {:.4f} sec; Batch: {:.4f} sec'.
-            format(train_iter,
-                   scheduler.get_lr()[0],
-                   loss.item(),
-                   bp_t1 - bp_t0,
-                   batch_t1 - batch_t0),
-            end="\r")
+        # print(
+        #     '[TRAIN] Iter[{}]; LR: {}; Loss: {:.6f}; Backprop: {:.4f} sec; Batch: {:.4f} sec'.
+        #     format(train_iter,
+        #            scheduler.get_lr()[0],
+        #            loss.item(),
+        #            bp_t1 - bp_t0,
+        #            batch_t1 - batch_t0),
+        #     end="\r")
+        writer.add_scalar("loss", loss.item(), train_iter)
+        writer.add_scalar("lr", scheduler.get_lr().item(), train_iter)
 
         if train_iter % 100 == 0:
             print('Loss at each step:')
@@ -212,11 +217,14 @@ while True:
                     train_iter, time.time() - eval_begin))
                 print('%s Loss   : ' % eval_name
                       + '\t'.join(['%.5f' % el for el in eval_loss.tolist()]))
+                print('%s Baseline MS-SSIM: ' %
+                      eval_name + str(baseline_scores[0]))
                 print('%s MS-SSIM: ' % eval_name
                       + '\t'.join(['%.5f' % el for el in mssim.tolist()]))
+                print('%s Baseline PSNR: ' %
+                      eval_name + str(baseline_scores[1]))
                 print('%s PSNR   : ' % eval_name
                       + '\t'.join(['%.5f' % el for el in psnr.tolist()]))
-                print('%s Baseline: ' % eval_name + str(baseline_scores))
 
             set_train(nets)
             just_resumed = False
