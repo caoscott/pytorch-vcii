@@ -192,7 +192,7 @@ while True:
         #            batch_t1 - batch_t0),
         #     end="\r")
         writer.add_scalar("loss", loss.item(), train_iter)
-        writer.add_scalar("lr", scheduler.get_lr().item(), train_iter)
+        writer.add_scalar("lr", scheduler.get_lr()[0], train_iter)
 
         if train_iter % 100 == 0:
             print('Loss at each step:')
