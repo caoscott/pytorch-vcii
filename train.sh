@@ -54,4 +54,5 @@ python -u train.py \
   --save-out-img \
   --batch-size 12 \
   --eval-iters 100 \
-  --iterations 1
+  --iterations 1 \
+  --eval-batch-size 100
