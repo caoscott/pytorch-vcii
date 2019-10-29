@@ -14,19 +14,19 @@ eval_mv="data/eval_mv"
 if [[ ${hier} == "0" ]]; then
   distance1=6
   distance2=6
-  bits=16
+  bits=512
   encoder_fuse_level=1
   decoder_fuse_level=1
 elif [[ ${hier} == "1" ]]; then
   distance1=3
   distance2=3
-  bits=16
+  bits=512
   encoder_fuse_level=2
   decoder_fuse_level=3
 elif [[ ${hier} == "2" ]]; then
   distance1=1
   distance2=2
-  bits=8
+  bits=256
   encoder_fuse_level=1
   decoder_fuse_level=1
 else
