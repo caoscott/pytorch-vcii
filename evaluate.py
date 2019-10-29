@@ -78,9 +78,6 @@ def run_eval(model, eval_loader, args, output_suffix=''):
             original, out_imgs, losses, code_batch, baseline_scores = eval_forward(
                 model, (batch, ctx_frames), args)
 
-            print(np.mean(f1), np.median(f1), np.linalg.norm(f1),
-                  np.mean(f2), np.median(f2), np.linalg.norm(f2))
-
             losses, msssim, psnr = finish_batch(
                 args, filenames, original, out_imgs,
                 losses, code_batch, output_suffix)
