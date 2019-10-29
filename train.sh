@@ -53,5 +53,6 @@ python -u train.py \
   --max-train-iters 10000 \
   --save-out-img \
   --batch-size 24 \
+  --iterations 5 \
   --eval-iters 100 \
   --eval-batch-size 100
