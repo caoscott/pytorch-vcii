@@ -213,7 +213,8 @@ def forward_model(model, cooked_batch, ctx_frames, args, v_compress,
     frame1 = ctx_frames[:, :3]
     frame2 = ctx_frames[:, 3:]
 
-    base_msssim, base_psnr = evaluate_scores(frame1_np, [res.cpu().numpy()])
+    base_msssim, base_psnr = evaluate_scores(
+        frame1_np, [res.cpu().numpy() + 0.5])
     baseline_scores = np.array([base_msssim.item(), base_psnr.item()])
 
     init_rnn = init_lstm
