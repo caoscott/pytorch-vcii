@@ -153,6 +153,7 @@ def train_loop(batch, crops, ctx_frames, check_code_size: bool):
         codes = binarizer(encoded)
         if check_code_size:
             print(f"Compressed code size is {codes.shape[1:]}")
+        check_code_size = False
 
         # Decode.
         (output, decoder_h_1, decoder_h_2, decoder_h_3, decoder_h_4) = decoder(
