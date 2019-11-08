@@ -151,6 +151,7 @@ def train_loop(batch, crops, ctx_frames):
 
         # Binarize.
         codes = binarizer(encoded)
+        print(codes)
 
         # Decode.
         (output, decoder_h_1, decoder_h_2, decoder_h_3, decoder_h_4) = decoder(
