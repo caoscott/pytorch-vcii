@@ -111,7 +111,7 @@ if args.load_model_name:
 writer = SummaryWriter()
 
 
-def train_loop(batch, crops, ctx_frames):
+def train_loop(batch, crops, ctx_frames, check_code_size: bool):
     scheduler.step()
     solver.zero_grad()
 
@@ -151,7 +151,8 @@ def train_loop(batch, crops, ctx_frames):
 
         # Binarize.
         codes = binarizer(encoded)
-        print(codes.shape)
+        if check_code_size:
+            print(f"Compressed code size is {codes.shape[1:]}")
 
         # Decode.
         (output, decoder_h_1, decoder_h_2, decoder_h_3, decoder_h_4) = decoder(
@@ -195,14 +196,16 @@ def train_loop(batch, crops, ctx_frames):
         save(train_iter)
 
 
-while True:
+check_code_size = True
 
+while True:
     for batch, (crops, ctx_frames, _) in enumerate(train_loader):
         train_iter += 1
         if train_iter > args.max_train_iters:
             break
 
-        train_loop(batch, crops, ctx_frames)
+        train_loop(batch, crops, ctx_frames, check_code_size=check_code_size)
+        check_code_size = False
 
         if just_resumed or train_iter % args.eval_iters == 0:
             print('Start evaluation...')
