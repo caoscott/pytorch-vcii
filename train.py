@@ -108,7 +108,7 @@ if args.load_model_name:
     scheduler.last_epoch = train_iter - 1
     just_resumed = True
 
-writer = SummaryWriter()
+writer = SummaryWriter(f'runs/{args.save_model_name}')
 
 
 def train_loop(batch, crops, ctx_frames, check_code_size: bool):
@@ -197,15 +197,13 @@ def train_loop(batch, crops, ctx_frames, check_code_size: bool):
         save(train_iter)
 
 
-check_code_size = True
-
 while True:
     for batch, (crops, ctx_frames, _) in enumerate(train_loader):
         train_iter += 1
         if train_iter > args.max_train_iters:
             break
 
-        train_loop(batch, crops, ctx_frames, check_code_size=check_code_size)
+        train_loop(batch, crops, ctx_frames, check_code_size=True)
         check_code_size = False
 
         if just_resumed or train_iter % args.eval_iters == 0:
