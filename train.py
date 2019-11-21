@@ -108,7 +108,7 @@ if args.load_model_name:
     scheduler.last_epoch = train_iter - 1
     just_resumed = True
 
-writer = SummaryWriter(f'runs/{args.save_model_name}')
+writer = SummaryWriter(log_dir=f"runs/{args.save_model_name}")
 
 
 def train_loop(batch, crops, ctx_frames, check_code_size: bool):
