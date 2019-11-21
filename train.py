@@ -111,7 +111,7 @@ if args.load_model_name:
 writer = SummaryWriter(log_dir="runs/{}".format(args.save_model_name))
 
 
-def train_loop(batch, crops, ctx_frames, check_code_size: bool):
+def train_loop(batch, crops, ctx_frames, check_code_size):
     scheduler.step()
     solver.zero_grad()
 
